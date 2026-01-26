@@ -1,0 +1,66 @@
+{% extends "base/layout.html" %}
+{% block title %}Yeni Lastik Otel Kaydi{% endblock %}
+{% block content %}
+<h3>Yeni Lastik Otel Kaydi</h3>
+<p class="text-muted">Depo 1 - Raf ve Goz kodu ile takip. Ornek: Raf=R3, Goz=G12</p>
+
+<form method="post" enctype="multipart/form-data" class="card shadow-sm">
+  <div class="card-body">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Plaka</label>
+        {{ form.plate_text }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Marka</label>
+        {{ form.brand }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Ebat</label>
+        {{ form.size }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Sezon</label>
+        {{ form.season }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Adet</label>
+        {{ form.qty }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Raf</label>
+        {{ form.rack_code }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Goz</label>
+        {{ form.slot_code }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Ucret</label>
+        {{ form.price }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Giris Tarihi</label>
+        {{ form.received_at }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Hatirlatma Tarihi</label>
+        {{ form.due_at }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Foto</label>
+        {{ form.photo }}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Not</label>
+        {{ form.notes }}
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Kaydet</button>
+    <a class="btn btn-outline-secondary" href="/tirehotel/">Geri</a>
+  </div>
+</form>
+{% endblock %}

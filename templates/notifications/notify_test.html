@@ -1,0 +1,31 @@
+{% extends "base/layout.html" %}
+{% block title %}Bildirim Test{% endblock %}
+{% block content %}
+<h3>Bildirim Test (SMS / WhatsApp)</h3>
+<p class="text-muted">Provider anahtarlari .env ile ayarlanir. Bu sayfa altyapiyi dogrulamak icin.</p>
+
+<form method="post" class="card shadow-sm">
+  <div class="card-body">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Kanal</label>
+        {{ form.channel }}
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Alici (E.164)</label>
+        {{ form.to_e164 }}
+        <div class="form-text">Orn: +905055555555</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Mesaj</label>
+        {{ form.message }}
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Gonder</button>
+    <a class="btn btn-outline-secondary" href="/">Dashboard</a>
+  </div>
+</form>
+{% endblock %}

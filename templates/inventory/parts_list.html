@@ -1,0 +1,165 @@
+{% extends "base/layout.html" %}
+{% block title %}Parça Stok{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Parça Stok</h3>
+  <button class="btn btn-primary" data-toggle="modal" data-target="#modalCreatePart" type="button">
+    <i class="fas fa-plus"></i> Yeni Parça
+  </button>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table id="partsTable" class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Parça</th>
+          <th>Barkod</th>
+          <th>Satış</th>
+          <th>Maliyet</th>
+          <th>Stok</th>
+          <th>Min</th>
+          <th class="text-right">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        {% with p=r.obj stock=r.stock %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td><strong>{{ p.name }}</strong><div class="text-muted">{{ p.brand }} | {{ p.sku }}</div></td>
+          <td>{{ p.barcode|default:"-" }}</td>
+          <td>{{ p.sale_price }}</td>
+          <td>{{ p.cost_price }}</td>
+
+          <td>
+            {% if stock <= p.min_stock %}
+              <span class="badge badge-danger">{{ stock }}</span>
+            {% else %}
+              <span class="badge badge-success">{{ stock }}</span>
+            {% endif %}
+          </td>
+          <td>{{ p.min_stock }}</td>
+
+          <td class="text-right">
+            <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modalEdit{{ p.id }}" type="button">Düzenle</button>
+            <button class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#modalIn{{ p.id }}" type="button">Stok +</button>
+          </td>
+        </tr>
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="modalEdit{{ p.id }}" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <form method="post" action="/inventory/parts/{{ p.id }}/edit/">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">Parça Düzenle</h5>
+                  <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                    <div class="col-md-6"><label>Ad</label><input name="name" class="form-control" value="{{ p.name }}"></div>
+                    <div class="col-md-3"><label>SKU</label><input name="sku" class="form-control" value="{{ p.sku }}"></div>
+                    <div class="col-md-3"><label>Barkod</label><input name="barcode" class="form-control" value="{{ p.barcode }}"></div>
+
+                    <div class="col-md-4 mt-2"><label>Marka</label><input name="brand" class="form-control" value="{{ p.brand }}"></div>
+                    <div class="col-md-2 mt-2"><label>Birim</label><input name="unit" class="form-control" value="{{ p.unit }}"></div>
+                    <div class="col-md-2 mt-2"><label>Satış</label><input name="sale_price" class="form-control" value="{{ p.sale_price }}"></div>
+                    <div class="col-md-2 mt-2"><label>Maliyet</label><input name="cost_price" class="form-control" value="{{ p.cost_price }}"></div>
+                    <div class="col-md-2 mt-2"><label>Min</label><input name="min_stock" class="form-control" value="{{ p.min_stock }}"></div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-primary" type="submit">Kaydet</button>
+                  <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock IN Modal -->
+        <div class="modal fade" id="modalIn{{ p.id }}" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form method="post" action="/inventory/parts/{{ p.id }}/stock-in/">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">Stok Girişi</h5>
+                  <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="form-group"><label>Adet</label><input name="qty" class="form-control" value="1"></div>
+                  <div class="form-group"><label>Maliyet (birim)</label><input name="unit_cost" class="form-control" value="{{ p.cost_price }}"></div>
+                  <div class="form-group"><label>Not</label><input name="note" class="form-control" placeholder="Fatura no vs."></div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-success" type="submit">Ekle</button>
+                  <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {% endwith %}
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Kayıt yok</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="modalCreatePart" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="/inventory/parts/create/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Yeni Parça</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6"><label>Ad</label><input name="name" class="form-control" required></div>
+            <div class="col-md-3"><label>SKU</label><input name="sku" class="form-control"></div>
+            <div class="col-md-3"><label>Barkod</label><input name="barcode" class="form-control"></div>
+
+            <div class="col-md-4 mt-2"><label>Marka</label><input name="brand" class="form-control"></div>
+            <div class="col-md-2 mt-2"><label>Birim</label><input name="unit" class="form-control" value="adet"></div>
+            <div class="col-md-2 mt-2"><label>Satış</label><input name="sale_price" class="form-control" value="0"></div>
+            <div class="col-md-2 mt-2"><label>Maliyet</label><input name="cost_price" class="form-control" value="0"></div>
+            <div class="col-md-2 mt-2"><label>Min</label><input name="min_stock" class="form-control" value="0"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Kaydet</button>
+          <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(document).ready(function(){
+  if (!$.fn.DataTable.isDataTable('#partsTable')) {
+    $('#partsTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      pageLength: 25,
+      language: { url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json" }
+    });
+  }
+});
+</script>
+
+{% endblock %}

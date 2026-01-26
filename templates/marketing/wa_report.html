@@ -1,0 +1,35 @@
+{% extends "base/layout.html" %}
+{% block title %}WhatsApp Rapor{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">WhatsApp Tıklama Raporu</h3></div>
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0 datatable">
+      <thead>
+        <tr>
+          <th>Tarih</th>
+          <th>Telefon</th>
+          <th>Tip</th>
+          <th>Müşteri</th>
+          <th>İş Emri</th>
+          <th>Kim</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+          <tr>
+            <td>{{ l.created_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ l.phone }}</td>
+            <td>{{ l.message_type }}</td>
+            <td>{% if l.customer %}{{ l.customer.full_name }}{% else %}-{% endif %}</td>
+            <td>{% if l.workorder_id %}#{{ l.workorder_id }}{% else %}-{% endif %}</td>
+            <td>{% if l.created_by %}{{ l.created_by.username }}{% else %}-{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">Kayıt yok</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

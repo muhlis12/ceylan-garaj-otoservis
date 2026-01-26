@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>CEYLAN GARAJ | Giriş</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% load static %}
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+</head>
+
+<body class="hold-transition login-page" style="background:#0b0b0b;">
+<div class="login-box">
+
+  <div class="text-center mb-3">
+    <img src="{% static 'brand/ceylan_garaj_logo.png' %}"
+         alt="CEYLAN GARAJ"
+         style="max-width:260px;width:100%;height:auto;filter:drop-shadow(0 8px 24px rgba(0,0,0,.55));">
+  </div>
+
+  <div class="card" style="border-radius:14px; overflow:hidden;">
+    <div class="card-body login-card-body">
+      <p class="login-box-msg font-weight-bold">Giriş Yap</p>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="input-group mb-3">
+          {{ form.username }}
+          <div class="input-group-append">
+            <div class="input-group-text"><span class="fas fa-user"></span></div>
+          </div>
+        </div>
+
+        <div class="input-group mb-3">
+          {{ form.password }}
+          <div class="input-group-append">
+            <div class="input-group-text"><span class="fas fa-lock"></span></div>
+          </div>
+        </div>
+
+        {% if form.errors %}
+          <div class="alert alert-danger py-2">Kullanıcı adı veya şifre hatalı.</div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-danger btn-block">
+          <i class="fas fa-sign-in-alt"></i> Giriş Yap
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const u = document.getElementById("id_username");
+  const p = document.getElementById("id_password");
+  if(u) u.classList.add("form-control");
+  if(p) p.classList.add("form-control");
+})();
+</script>
+</body>
+</html>

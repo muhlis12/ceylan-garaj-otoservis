@@ -1,0 +1,124 @@
+{% extends "base/layout.html" %}
+{% block title %}Karlılık Raporu{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Karlılık Raporu</h3>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form class="row g-2" method="get">
+      <div class="col-md-3">
+        <label class="form-label">Başlangıç</label>
+        <input type="date" name="start" value="{{ start }}" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Bitiş</label>
+        <input type="date" name="end" value="{{ end }}" class="form-control">
+      </div>
+      <div class="col-md-3 align-self-end">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-filter"></i> Filtrele
+        </button>
+      </div>
+    </form>
+
+    <hr>
+
+    <div class="row">
+      <div class="col-md-4"><strong>Toplam Ciro:</strong> {{ totals.revenue }}</div>
+      <div class="col-md-4"><strong>Parça Maliyeti:</strong> {{ totals.parts_cost }}</div>
+      <div class="col-md-4"><strong>Kâr:</strong> {{ totals.profit }}</div>
+    </div>
+
+    <small class="text-muted d-block mt-2">
+      Not: Kâr = Ciro - Parça Maliyeti (işçilik maliyeti takip edilmiyor).
+    </small>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-3">Günlük Karlılık Grafiği</h5>
+    <canvas id="profitChart" height="90"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table id="profitTable" class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Tarih</th>
+          <th>İş Sayısı</th>
+          <th>Ciro</th>
+          <th>Parça Maliyeti</th>
+          <th>Kâr</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.day|date:"d.m.Y" }}</td>
+          <td>{{ r.count }}</td>
+          <td>{{ r.revenue }}</td>
+          <td>{{ r.parts_cost }}</td>
+          <td>{{ r.profit }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Kayıt yok</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  const labels = {{ chart_labels|safe }};
+  const revenue = {{ chart_revenue|safe }};
+  const cost = {{ chart_cost|safe }};
+  const profit = {{ chart_profit|safe }};
+
+  const el = document.getElementById('profitChart');
+  if(!el) return;
+
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Ciro', data: revenue, tension: 0.25 },
+        { label: 'Maliyet', data: cost, tension: 0.25 },
+        { label: 'Kâr', data: profit, tension: 0.25 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+})();
+</script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(document).ready(function(){
+  if (!$.fn.DataTable.isDataTable('#profitTable')) {
+    $('#profitTable').DataTable({
+      responsive:true,
+      autoWidth:false,
+      pageLength:15,
+      order:[[0,'asc']],
+      language:{url:"//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json"}
+    });
+  }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base/layout.html" %}
+{% block title %}Müşteri Detay{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <h3 class="mb-0">{{ customer.full_name }}</h3>
+  <div class="text-muted">
+    {% if customer.phone %}{{ customer.phone }}{% endif %}
+    {% if customer.email %}<span class="ml-2">{{ customer.email }}</span>{% endif %}
+  </div>
+  <a href="/customers/" class="btn btn-outline-secondary btn-sm mt-2">Geri</a>
+</div>
+
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Araçlar</h3></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Plaka</th><th>Marka/Model</th></tr></thead>
+          <tbody>
+            {% for v in vehicles %}
+              <tr><td><strong>{{ v.plate }}</strong></td><td>{{ v.brand }} {{ v.model }}</td></tr>
+            {% empty %}
+              <tr><td colspan="2" class="text-muted text-center py-3">Araç yok</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Parça Geçmişi</h3></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Parça</th><th class="text-right">Adet</th><th class="text-right">Toplam</th></tr></thead>
+          <tbody>
+            {% for p in parts_summary %}
+              <tr>
+                <td>{{ p.name }}</td>
+                <td class="text-right">{{ p.qty }}</td>
+                <td class="text-right">{{ p.total }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-muted text-center py-3">Parça kaydı yok</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">İş Emirleri Geçmişi</h3></div>
+      <div class="card-body p-0">
+        <table id="customerOrdersTable" class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Plaka</th>
+              <th>Tür</th>
+              <th>Durum</th>
+              <th class="text-right">İşçilik</th>
+              <th class="text-right">Parça</th>
+              <th class="text-right">Toplam</th>
+              <th>Tarih</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in orders %}
+              <tr>
+                <td>{{ o.id }}</td>
+                <td>{{ o.plate_text|default:o.vehicle.plate }}</td>
+                <td>{{ o.get_kind_display }}</td>
+                <td>{{ o.get_status_display }}</td>
+                <td class="text-right">{{ o.labor_total }}</td>
+                <td class="text-right">{{ o.parts_total }}</td>
+                <td class="text-right"><strong>{{ o.grand_total }}</strong></td>
+                <td>{{ o.created_at|date:"d.m.Y H:i" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="text-muted text-center py-3">İş emri yok</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Lastik Otel Kayıtları</h3></div>
+      <div class="card-body p-0">
+        <table id="customerTiresTable" class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Plaka</th>
+              <th>Sezon</th>
+              <th>Lastik</th>
+              <th>Konum</th>
+              <th class="text-right">Ücret</th>
+              <th>Durum</th>
+              <th>Tarih</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tire_entries %}
+              <tr>
+                <td>{{ t.id }}</td>
+                <td>{{ t.plate_text|default:t.vehicle.plate }}</td>
+                <td>{{ t.get_season_display }}</td>
+                <td>{{ t.brand }} {{ t.size }} ({{ t.qty }})</td>
+                <td>{{ t.rack_code }}/{{ t.slot_code }}</td>
+                <td class="text-right">{{ t.price }}</td>
+                <td>
+                  {% if t.is_active %}
+                    <span class="badge badge-success">Depoda</span>
+                  {% else %}
+                    <span class="badge badge-secondary">Çıktı</span>
+                  {% endif %}
+                </td>
+                <td>{{ t.created_at|date:"d.m.Y" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="text-muted text-center py-3">Lastik otel kaydı yok</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ DataTables (sadece bu sayfada) -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(document).ready(function(){
+  if (!$.fn.DataTable.isDataTable('#customerOrdersTable')) {
+    $('#customerOrdersTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      pageLength: 10,
+      order: [[7, "desc"]],
+      language: { url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json" }
+    });
+  }
+  if (!$.fn.DataTable.isDataTable('#customerTiresTable')) {
+    $('#customerTiresTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      pageLength: 10,
+      order: [[7, "desc"]],
+      language: { url: "//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json" }
+    });
+  }
+});
+</script>
+
+{% endblock %}

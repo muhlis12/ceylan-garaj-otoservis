@@ -1,0 +1,107 @@
+{% extends "base/layout.html" %}
+{% block title %}Müşteriler{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Müşteriler</h3>
+  <button class="btn btn-primary" data-toggle="modal" data-target="#modalCustomer">
+    <i class="fas fa-plus"></i> Yeni Müşteri
+  </button>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0 datatable">
+      <thead>
+        <tr>
+          <th>#</th><th>Ad Soyad</th><th>Telefon</th><th>Email</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in items %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td><a href="/customers/{{ c.id }}/">{{ c.full_name }}</a></td>
+          <td>{{ c.phone }}</td>
+          <td>{{ c.email }}</td>
+          <td class="text-right">
+            <button class="btn btn-sm btn-outline-secondary"
+              data-toggle="modal" data-target="#modalEdit{{ c.id }}">
+              Düzenle
+            </button>
+          </td>
+        </tr>
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="modalEdit{{ c.id }}" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form method="post" action="/customers/{{ c.id }}/edit/">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">Müşteri Düzenle</h5>
+                  <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input class="form-control" name="full_name" value="{{ c.full_name }}">
+                  </div>
+                  <div class="form-group">
+                    <label>Telefon</label>
+                    <input class="form-control" name="phone" value="{{ c.phone }}">
+                  </div>
+                  <div class="form-group">
+                    <label>Email</label>
+                    <input class="form-control" name="email" value="{{ c.email }}">
+                  </div>
+                  <div class="form-group">
+                    <label>Not</label>
+                    <textarea class="form-control" name="notes" rows="3">{{ c.notes }}</textarea>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-primary" type="submit">Kaydet</button>
+                  <form method="post" action="/customers/{{ c.id }}/delete/" class="ml-auto">
+                    {% csrf_token %}
+                    <button class="btn btn-danger" type="submit">Sil</button>
+                  </form>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Kayıt yok</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="modalCustomer" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/customers/create/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Yeni Müşteri</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group"><label>Ad Soyad</label><input class="form-control" name="full_name"></div>
+          <div class="form-group"><label>Telefon</label><input class="form-control" name="phone"></div>
+          <div class="form-group"><label>Email</label><input class="form-control" name="email"></div>
+          <div class="form-group"><label>Plaka (opsiyonel)</label><input class="form-control" name="plate" placeholder="06ABC123"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

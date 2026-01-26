@@ -1,0 +1,38 @@
+{% extends "base/layout.html" %}
+{% block title %}WhatsApp Reklam{% endblock %}
+
+{% block content %}
+<h3>📢 WhatsApp Toplu Mesaj</h3>
+
+<div class="card">
+  <div class="card-body">
+
+    <label>Mesaj İçeriği</label>
+    <textarea id="msg" class="form-control" rows="4">
+CEYLAN GARAJ 🚗
+V.İ.P HİZMET
+Bakım • Tamir • Lastik • Oto Kuaför
+Randevu için bize yazın!
+    </textarea>
+
+    <hr>
+
+    <button class="btn btn-success" onclick="sendAll()">
+      <i class="fab fa-whatsapp"></i> WhatsApp Aç
+    </button>
+
+  </div>
+</div>
+
+<script>
+function sendAll(){
+  const msg = encodeURIComponent(document.getElementById('msg').value);
+
+  {% for c in customers %}
+    {% if c.wa_phone %}
+      window.open("https://wa.me/{{ c.wa_phone }}?text=" + msg, "_blank");
+    {% endif %}
+  {% endfor %}
+}
+</script>
+{% endblock %}

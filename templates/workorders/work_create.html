@@ -1,0 +1,106 @@
+{% extends "base/layout.html" %}
+{% block title %}Yeni Is Emri{% endblock %}
+{% block content %}
+<h3>Yeni Is Emri</h3>
+<p class="text-muted">Gelen siraya gore kayit. Plakayi yaz, turu sec, kaydet.</p>
+
+<div class="alert alert-info py-2" id="plateMatchBox" style="display:none;">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <strong id="matchPlate">-</strong>
+      <span class="text-muted">•</span>
+      <span id="matchCustomer">Musteri bulunamadi</span>
+      <span class="text-muted" id="matchPhone"></span>
+    </div>
+    <small class="text-muted">(Plaka eslestirme otomatik)</small>
+  </div>
+</div>
+
+<form method="post" class="card shadow-sm">
+  <div class="card-body">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Tur</label>
+        {{ form.kind }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Plaka</label>
+        <div class="position-relative">
+          {{ form.plate_text }}
+          <div class="list-group position-absolute w-100 shadow" id="plateSuggest" style="z-index:20; display:none;"></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">KM</label>
+        {{ form.km }}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Sikayet / Not</label>
+        {{ form.complaint }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Odeme Yontemi</label>
+        {{ form.payment_method }}
+        <div class="form-text">Orn: NAKIT / KART / HAVALE</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Kaydet</button>
+    <a class="btn btn-outline-secondary" href="/workorders/">Geri</a>
+  </div>
+</form>
+
+<script>
+(function(){
+  const inp = document.getElementById('id_plate_text');
+  const box = document.getElementById('plateMatchBox');
+  const suggest = document.getElementById('plateSuggest');
+  const matchPlate = document.getElementById('matchPlate');
+  const matchCustomer = document.getElementById('matchCustomer');
+  const matchPhone = document.getElementById('matchPhone');
+
+  if(!inp) return;
+  inp.setAttribute('autocomplete','off');
+  inp.addEventListener('input', async () => {
+    const q = (inp.value || '').trim();
+    box.style.display = 'none';
+    suggest.style.display = 'none';
+    suggest.innerHTML = '';
+    if(q.length < 2) return;
+
+    try{
+      const res = await fetch(`/api/plates/search/?q=${encodeURIComponent(q)}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const data = await res.json();
+      const items = data.items || [];
+      if(items.length === 0) return;
+      suggest.style.display = 'block';
+      items.forEach(it => {
+        const a = document.createElement('button');
+        a.type = 'button';
+        a.className = 'list-group-item list-group-item-action';
+        a.innerHTML = `<strong>${it.plate}</strong> <span class="text-muted">${it.customer_name ? '• '+it.customer_name : ''} ${it.customer_phone ? '• '+it.customer_phone : ''}</span>`;
+        a.addEventListener('click', () => {
+          inp.value = it.plate;
+          suggest.style.display = 'none';
+          matchPlate.textContent = it.plate;
+          matchCustomer.textContent = it.customer_name || 'Musteri bulunamadi';
+          matchPhone.textContent = it.customer_phone ? (' • ' + it.customer_phone) : '';
+          box.style.display = 'block';
+        });
+        suggest.appendChild(a);
+      });
+    }catch(e){
+      // sessiz
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!suggest.contains(e.target) && e.target !== inp){
+      suggest.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,679 @@
+{% extends "base/layout.html" %}
+{% block title %}İş Emirleri{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">İş Emirleri</h3>
+  <button class="btn btn-primary" data-toggle="modal" data-target="#modalWorkorder" type="button">
+    <i class="fas fa-plus"></i> Yeni İş Emri
+  </button>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="card">
+  <div class="card-body p-0">
+    <table id="workordersTable" class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Plaka</th>
+          <th>Tür</th>
+          <th>Durum</th>
+          <th>Müşteri</th>
+          <th>Tarih</th>
+          <th class="text-right">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for o in items %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>{{ o.plate_text|default:o.vehicle.plate }}</td>
+          <td>{{ o.get_kind_display }}</td>
+          <td>
+            {% if o.status == "DONE" %}
+              <span class="badge badge-success">Teslim</span>
+            {% elif o.status == "IN_PROGRESS" %}
+              <span class="badge badge-warning">İşlemde</span>
+            {% else %}
+              <span class="badge badge-secondary">Beklemede</span>
+            {% endif %}
+          </td>
+          <td>{% if o.customer %}{{ o.customer.full_name }}{% else %}-{% endif %}</td>
+          <td>{{ o.created_at|date:"d.m.Y H:i" }}</td>
+          <td class="text-right">
+            <button type="button" class="btn btn-sm btn-outline-dark" data-toggle="modal" data-target="#modalDetail{{ o.id }}">Detay</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modalEdit{{ o.id }}">Düzenle</button>
+            {% if o.status != "DONE" %}
+              <button type="button" class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#modalDone{{ o.id }}">Bitir</button>
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- =================== DETAY MODAL =================== -->
+        <div class="modal fade" id="modalDetail{{ o.id }}" tabindex="-1">
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">İş Emri Detayı • #{{ o.id }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+              </div>
+
+              <div class="modal-body">
+                <div class="row mb-2">
+                  <div class="col-md-3"><b>Plaka:</b> {{ o.plate_text|default:o.vehicle.plate }}</div>
+                  <div class="col-md-3"><b>Tür:</b> {{ o.get_kind_display }}</div>
+                  <div class="col-md-3"><b>Durum:</b> {{ o.get_status_display }}</div>
+                  <div class="col-md-3"><b>KM:</b> {{ o.km|default:"-" }}</div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-6"><b>Müşteri:</b> {% if o.customer %}{{ o.customer.full_name }}{% else %}-{% endif %}</div>
+                  <div class="col-md-6"><b>Telefon:</b> {% if o.customer %}{{ o.customer.phone|default:"-" }}{% else %}-{% endif %}</div>
+                </div>
+
+                <div class="row mb-2" id="totalsBox-{{ o.id }}">
+                  <div class="col-md-4"><b>İşçilik:</b> <span id="laborSpan-{{ o.id }}">{{ o.labor_total|default:"0" }}</span> ₺</div>
+                  <div class="col-md-4"><b>Parça:</b> <span id="partsSpan-{{ o.id }}">{{ o.parts_total|default:"0" }}</span> ₺</div>
+                  <div class="col-md-4"><b>Toplam:</b> <span id="grandSpan-{{ o.id }}">{{ o.grand_total|default:"0" }}</span> ₺</div>
+                </div>
+
+                <div class="mb-2"><b>Konu:</b> {{ o.subject|default:"-" }}</div>
+                <div class="mb-2"><b>Şikayet / Not:</b><div class="text-muted" style="white-space:pre-wrap;">{{ o.complaint|default:"-" }}</div></div>
+
+                {% if o.staff_note %}
+                  <div class="mb-2"><b>Usta Notu:</b><div class="text-muted" style="white-space:pre-wrap;">{{ o.staff_note }}</div></div>
+                {% endif %}
+
+                {% if o.finished_at %}
+                  <div class="mb-2"><b>Teslim Tarihi:</b> {{ o.finished_at|date:"d.m.Y H:i" }}</div>
+                {% endif %}
+
+                <hr>
+                <h6 class="mb-2">Parça Ekle (Stoktan düşer)</h6>
+
+                <form class="part-add-form" data-order-id="{{ o.id }}" action="/inventory/workorders/{{ o.id }}/add-part/" method="post">
+                  {% csrf_token %}
+                  <div class="row">
+                    <div class="col-md-6">
+                      <label>Parça</label>
+                      <select class="form-control part-select" name="part_id" style="width:100%" required></select>
+                      <small class="text-muted">İsim / Barkod / SKU ile ara.</small>
+                    </div>
+                    <div class="col-md-2">
+                      <label>Adet</label>
+                      <input name="qty" class="form-control" value="1">
+                    </div>
+                    <div class="col-md-2">
+                      <label>Fiyat</label>
+                      <input name="unit_price" class="form-control unit-price" value="0">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                      <button class="btn btn-success btn-block" type="submit">Ekle</button>
+                    </div>
+                  </div>
+
+                  <div class="row mt-2">
+                    <div class="col-md-6">
+                      <label>Barkod</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control barcode-input" placeholder="Barkodu okut ya da yaz">
+                        <div class="input-group-append">
+                          <button class="btn btn-outline-primary btn-scan" type="button">📷 Tara</button>
+                        </div>
+                      </div>
+                      <small class="text-muted">Enter basınca parça otomatik seçilir.</small>
+                    </div>
+                    <div class="col-md-6">
+                      <label>Stok</label>
+                      <input type="text" class="form-control stock-view" value="-" readonly>
+                    </div>
+                  </div>
+                </form>
+
+                <div class="mt-3" id="partsBox-{{ o.id }}">
+                  <b>Ekli Parçalar:</b>
+                  <ul class="mb-0" id="partsList-{{ o.id }}">
+                    {% for p in o.parts.all %}
+                      <li>{{ p.part.name }} x{{ p.qty }} = {{ p.line_total }} ₺</li>
+                    {% empty %}
+                      <li class="text-muted">Henüz parça eklenmedi.</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-dismiss="modal" type="button">Kapat</button>
+                <a class="btn btn-outline-dark" href="/workorders/{{ o.id }}/accept/print/" target="_blank"><i class="fas fa-print"></i> Kabul Fişi</a>
+                <a class="btn btn-outline-success" href="/workorders/{{ o.id }}/final/print/" target="_blank"><i class="fas fa-print"></i> Teslim Fişi</a>
+                <a class="btn btn-outline-primary" href="/workorders/{{ o.id }}/invoice.pdf" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================== EDIT MODAL =================== -->
+        <div class="modal fade" id="modalEdit{{ o.id }}" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <form method="post" action="/workorders/{{ o.id }}/edit/">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">İş Emri Düzenle • #{{ o.id }}</h5>
+                  <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <label>Konu</label>
+                      <input name="subject" class="form-control" value="{{ o.subject|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                      <label>Durum</label>
+                      <select name="status" class="form-control">
+                        <option value="WAITING" {% if o.status == "WAITING" %}selected{% endif %}>Beklemede</option>
+                        <option value="IN_PROGRESS" {% if o.status == "IN_PROGRESS" %}selected{% endif %}>İşlemde</option>
+                        <option value="DONE" {% if o.status == "DONE" %}selected{% endif %}>Teslim</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label>KM</label>
+                      <input name="km" class="form-control" value="{{ o.km|default:'' }}">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Ödeme Yöntemi</label>
+                      <input name="payment_method" class="form-control" value="{{ o.payment_method|default:'' }}" placeholder="NAKIT/KART/HAVALE">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>İşçilik (₺)</label>
+                      <input name="labor_total" class="form-control" value="{{ o.labor_total|default:'0' }}">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Parça (₺)</label>
+                      <input name="parts_total" class="form-control" value="{{ o.parts_total|default:'0' }}">
+                    </div>
+                    <div class="col-12 mt-2">
+                      <label>Şikayet / Not</label>
+                      <textarea name="complaint" class="form-control" rows="2">{{ o.complaint }}</textarea>
+                    </div>
+                    <div class="col-12 mt-2">
+                      <label>Usta Notu</label>
+                      <textarea name="staff_note" class="form-control" rows="2">{{ o.staff_note }}</textarea>
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Ödendi mi?</label>
+                      <select name="is_paid" class="form-control">
+                        <option value="0" {% if not o.is_paid %}selected{% endif %}>Hayır</option>
+                        <option value="1" {% if o.is_paid %}selected{% endif %}>Evet</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-primary" type="submit">Kaydet</button>
+                  <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================== DONE MODAL =================== -->
+        <div class="modal fade" id="modalDone{{ o.id }}" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form method="post" action="/workorders/{{ o.id }}/done/">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">İş Emrini Bitir • #{{ o.id }}</h5>
+                  <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label>İşçilik (₺)</label>
+                    <input name="labor_total" class="form-control" value="{{ o.labor_total|default:'0' }}" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Parça (₺)</label>
+                    <input name="parts_total" class="form-control" value="{{ o.parts_total|default:'0' }}">
+                  </div>
+                  <small class="text-muted">Toplam = İşçilik + Parça olarak kaydedilir.</small>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-success" type="submit">Bitir</button>
+                  <button class="btn btn-secondary" type="button" data-dismiss="modal">İptal</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Kayıt yok</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =================== CREATE MODAL =================== -->
+<div class="modal fade" id="modalWorkorder" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="/workorders/create/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Yeni İş Emri</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert alert-info py-2" id="plateMatchBox" style="display:none;">
+            <strong id="matchPlate">-</strong>
+            <span class="text-muted"> • </span>
+            <span id="matchCustomer">Müşteri bulunamadı</span>
+            <span class="text-muted" id="matchPhone"></span>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <label>Tür</label>
+              <select id="kind_select" name="kind" class="form-control">
+                <option value="CAR_WASH">Oto Yıkama</option>
+                <option value="VEHICLE_REPAIR">Araç Tamir</option>
+                <option value="TIRE_REPAIR">Lastik</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label>Plaka</label>
+              <div class="position-relative">
+                <input id="id_plate_text" name="plate_text" class="form-control" placeholder="06ABC123" autocomplete="off">
+                <div class="list-group position-absolute w-100 shadow" id="plateSuggest" style="z-index:20; display:none;"></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label>KM</label>
+              <input name="km" class="form-control" placeholder="125000">
+            </div>
+
+            <div class="col-md-6 mt-2">
+              <label>Araç Marka</label>
+              <input id="vehicle_brand" name="vehicle_brand" class="form-control" placeholder="Örn: Renault">
+            </div>
+            <div class="col-md-6 mt-2">
+              <label>Araç Model</label>
+              <input id="vehicle_model" name="vehicle_model" class="form-control" placeholder="Örn: Clio">
+            </div>
+
+            <div class="col-md-6 mt-2">
+              <label>Hizmet / İşlem (Çoklu Seçim)</label>
+              <select id="service_select" class="form-control" multiple></select>
+              <small class="text-muted">Tür seçince seçenekler otomatik gelir.</small>
+            </div>
+            <div class="col-md-6 mt-2">
+              <label>Konu (otomatik)</label>
+              <input id="subject_input" name="subject" class="form-control" placeholder="Örn: İç-Dış Yıkama / Motor Yıkama">
+            </div>
+
+            <div class="col-12 mt-2">
+              <label>Şikayet / Not</label>
+              <textarea name="complaint" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="col-md-4 mt-2">
+              <label>Ödeme Yöntemi</label>
+              <input name="payment_method" class="form-control" placeholder="NAKIT / KART / HAVALE">
+            </div>
+            <div class="col-md-4 mt-2">
+              <label>İşçilik (₺) (Tahmini)</label>
+              <input name="labor_total" class="form-control" value="0">
+            </div>
+            <div class="col-md-4 mt-2">
+              <label>Parça (₺) (Tahmini)</label>
+              <input name="parts_total" class="form-control" value="0">
+            </div>
+          </div>
+
+          <div class="card card-outline card-secondary mt-3" id="customerCard">
+            <div class="card-header"><h3 class="card-title">Plaka sistemde yoksa müşteri ekle</h3></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <label>Müşteri Ad Soyad</label>
+                  <input id="full_name" name="full_name" class="form-control" placeholder="Ad Soyad">
+                </div>
+                <div class="col-md-3">
+                  <label>Telefon</label>
+                  <input id="phone" name="phone" class="form-control" placeholder="05xx...">
+                </div>
+                <div class="col-md-3">
+                  <label>Email</label>
+                  <input id="email" name="email" class="form-control" placeholder="opsiyonel">
+                </div>
+              </div>
+              <small class="text-muted d-block mt-2">Plaka bulunduysa bu kart otomatik kapanır.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Kaydet</button>
+          <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+$(function(){
+  // DataTable
+  if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#workordersTable')) {
+    $('#workordersTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      pageLength: 10,
+      order: [[0,'desc']],
+      language: { url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json' }
+    });
+  }
+
+  // ---- Create modal: hizmet seçenekleri + select2 ----
+  const OPTIONS = {
+    'CAR_WASH': ['İç-Dış Yıkama','İç Yıkama','Dış Yıkama','Oto Kuaför','Genel Temizlik','Motor Yıkama','Alt Yıkama','Cilalı Yıkama'],
+    'VEHICLE_REPAIR': ['Yağ Bakımı','Balata Değişimi','Ön Takım Bakımı','Şanzıman Bakımı ve Tamiri','Motor Genel Tamiri','Elektrik / Elektronik','Klima Bakımı'],
+    'TIRE_REPAIR': ['Lastik Değişimi','Lastik Tamiri','Lastik Balansı']
+  };
+
+  function initServiceSelect(){
+    const $sel = $('#service_select');
+    if (!$sel.length) return;
+    if ($sel.hasClass('select2-hidden-accessible')) $sel.select2('destroy');
+    $sel.select2({ width:'100%', dropdownParent: $('#modalWorkorder'), placeholder:'Hizmet seç...', closeOnSelect:false });
+  }
+
+  function fillServices(kind){
+    const arr = OPTIONS[kind] || [];
+    const $sel = $('#service_select');
+    $sel.empty();
+    arr.forEach(t => $sel.append(new Option(t, t, false, false)));
+    initServiceSelect();
+    $sel.val(null).trigger('change');
+  }
+
+  $(document).on('change', '#service_select', function(){
+    const vals = $('#service_select').val() || [];
+    $('#subject_input').val(vals.join(' / '));
+  });
+
+  $(document).on('change', '#kind_select', function(){
+    fillServices(this.value);
+    $('#subject_input').val('');
+  });
+
+  $('#modalWorkorder').on('shown.bs.modal', function(){
+    initServiceSelect();
+    fillServices($('#kind_select').val());
+    $('#id_plate_text').trigger('input');
+  });
+
+  // ---- Plaka autocomplete + lookup ----
+  const $plate = $('#id_plate_text');
+  const $suggest = $('#plateSuggest');
+  const $matchBox = $('#plateMatchBox');
+  const $matchPlate = $('#matchPlate');
+  const $matchCustomer = $('#matchCustomer');
+  const $matchPhone = $('#matchPhone');
+
+  const $customerCard = $('#customerCard');
+  const $fullName = $('#full_name');
+  const $phone = $('#phone');
+  const $email = $('#email');
+  const $brand = $('#vehicle_brand');
+  const $model = $('#vehicle_model');
+
+  function showMatch(plate, cname, cphone){
+    $matchPlate.text(plate || '-');
+    $matchCustomer.text(cname || 'Müşteri');
+    $matchPhone.text(cphone ? (' • ' + cphone) : '');
+    $matchBox.show();
+  }
+  function clearMatch(){ $matchBox.hide(); }
+  function setCustomerCard(found){
+    if(found){
+      $customerCard.hide();
+      $fullName.prop('readonly', true);
+      $phone.prop('readonly', true);
+      $email.prop('readonly', true);
+    } else {
+      $customerCard.show();
+      $fullName.prop('readonly', false);
+      $phone.prop('readonly', false);
+      $email.prop('readonly', false);
+    }
+  }
+  function setVehicleReadonly(found){
+    $brand.prop('readonly', found);
+    $model.prop('readonly', found);
+  }
+
+  async function lookupExactPlate(plate){
+    try{
+      const res = await fetch(`/customers/api/plate-lookup/?q=${encodeURIComponent(plate)}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const data = await res.json();
+      if(!data.found){
+        clearMatch();
+        setCustomerCard(false);
+        setVehicleReadonly(false);
+        $fullName.val(''); $phone.val(''); $email.val('');
+        $brand.val(''); $model.val('');
+        return;
+      }
+      showMatch(data.vehicle?.plate || plate, data.customer?.full_name || 'Müşteri', data.customer?.phone || '');
+      setCustomerCard(true);
+      setVehicleReadonly(true);
+      $fullName.val(data.customer?.full_name || '');
+      $phone.val(data.customer?.phone || '');
+      $email.val(data.customer?.email || '');
+      $brand.val(data.vehicle?.brand || '');
+      $model.val(data.vehicle?.model || '');
+    }catch(e){
+      // sessiz
+    }
+  }
+
+  let plateTimer = null;
+  $plate.on('input', function(){
+    const q = ($plate.val() || '').trim().toUpperCase();
+    $plate.val(q);
+    clearTimeout(plateTimer);
+
+    if(q.length < 2){
+      $suggest.hide().empty();
+      clearMatch();
+      return;
+    }
+
+    plateTimer = setTimeout(async () => {
+      try{
+        const res = await fetch(`/api/plates/search/?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        const items = data.items || [];
+        $suggest.empty();
+        if(!items.length){
+          $suggest.hide();
+          await lookupExactPlate(q);
+          return;
+        }
+        items.forEach(it => {
+          const btn = $('<button type="button" class="list-group-item list-group-item-action"></button>');
+          btn.html(`<strong>${it.plate}</strong><span class="text-muted">${it.customer_name ? ' • '+it.customer_name : ''}${it.customer_phone ? ' • '+it.customer_phone : ''}</span>`);
+          btn.on('click', async () => {
+            $plate.val(it.plate);
+            $suggest.hide().empty();
+            await lookupExactPlate(it.plate);
+          });
+          $suggest.append(btn);
+        });
+        $suggest.show();
+      }catch(e){
+        $suggest.hide().empty();
+      }
+    }, 200);
+  });
+
+  $plate.on('blur', function(){
+    const q = ($plate.val() || '').trim().toUpperCase();
+    if(q.length >= 2){ setTimeout(() => lookupExactPlate(q), 150); }
+  });
+
+  $(document).on('click', function(e){
+    if(!$(e.target).closest('#plateSuggest, #id_plate_text').length) $suggest.hide();
+  });
+
+  // ---- Parça Select2 + stok/fiyat otomatik ----
+  function initPartSelect(modalEl){
+    const $modal = $(modalEl);
+    $modal.find('.part-select').each(function(){
+      const $sel = $(this);
+      if ($sel.hasClass('select2-hidden-accessible')) return;
+      $sel.select2({
+        width: '100%',
+        dropdownParent: $modal,
+        placeholder: 'Parça ara (isim/barkod/sku)...',
+        ajax: {
+          url: '/inventory/api/parts/search/',
+          dataType: 'json',
+          delay: 200,
+          data: params => ({ q: params.term || '' }),
+          processResults: data => data
+        }
+      });
+
+      $sel.on('select2:select', function(e){
+        const item = e.params.data;
+        const $form = $sel.closest('form');
+        $form.find('.unit-price').val(item.price || '0');
+        $form.find('.stock-view').val(item.stock || '-');
+        $form.find('.barcode-input').val(item.barcode || '');
+      });
+    });
+  }
+
+  document.addEventListener('shown.bs.modal', function(ev){
+    if (window.jQuery) initPartSelect(ev.target);
+  });
+
+  async function selectByBarcode(formEl, code){
+    code = (code || '').trim();
+    if(!code) return;
+    const res = await fetch('/inventory/api/parts/search/?q=' + encodeURIComponent(code));
+    const data = await res.json();
+    const results = (data && data.results) ? data.results : [];
+    if(!results.length){ alert('Bu barkodla parça bulunamadı: ' + code); return; }
+    const item = results[0];
+    const $form = $(formEl);
+    const $sel = $form.find('.part-select');
+    const option = new Option(item.text, item.id, true, true);
+    $sel.append(option).trigger('change');
+    $form.find('.unit-price').val(item.price || '0');
+    $form.find('.stock-view').val(item.stock || '-');
+    $form.find('.barcode-input').val(item.barcode || code);
+  }
+
+  document.addEventListener('keydown', function(e){
+    const inp = e.target.closest('.barcode-input');
+    if(!inp) return;
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      selectByBarcode(inp.closest('form'), inp.value);
+    }
+  });
+
+  async function openScanner(formEl){
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="width:520px;max-width:92vw;background:#fff;border-radius:10px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>Barkod Tara</strong>
+          <button id="scanClose" style="border:0;background:#eee;border-radius:6px;padding:6px 10px;">Kapat</button>
+        </div>
+        <div id="qrReader" style="margin-top:10px;"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const qr = new Html5Qrcode('qrReader');
+    async function stopAll(){ try{ await qr.stop(); }catch(e){} overlay.remove(); }
+    overlay.querySelector('#scanClose').addEventListener('click', stopAll);
+    try{
+      await qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 320, height: 200 } }, async (decodedText) => {
+        $(formEl).find('.barcode-input').val(decodedText);
+        await selectByBarcode(formEl, decodedText);
+        await stopAll();
+      });
+    }catch(e){
+      alert('Kamera açılamadı. HTTPS/izin kontrol et.');
+      await stopAll();
+    }
+  }
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.btn-scan');
+    if(!btn) return;
+    openScanner(btn.closest('form'));
+  });
+
+  async function ajaxRefreshFromReturnedHTML(htmlText, orderId){
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+    const newPartsBox = doc.querySelector('#partsBox-' + orderId);
+    const newTotals = doc.querySelector('#totalsBox-' + orderId);
+    if(newPartsBox){
+      const cur = document.querySelector('#partsBox-' + orderId);
+      if(cur) cur.innerHTML = newPartsBox.innerHTML;
+    }
+    if(newTotals){
+      const curT = document.querySelector('#totalsBox-' + orderId);
+      if(curT) curT.innerHTML = newTotals.innerHTML;
+    }
+  }
+
+  document.addEventListener('submit', async function(e){
+    const form = e.target.closest('.part-add-form');
+    if(!form) return;
+    e.preventDefault();
+    const orderId = form.getAttribute('data-order-id');
+    const url = form.getAttribute('action');
+    const fd = new FormData(form);
+    try{
+      const res = await fetch(url, { method:'POST', body: fd, headers: {'X-Requested-With':'XMLHttpRequest'} });
+      const text = await res.text();
+      await ajaxRefreshFromReturnedHTML(text, orderId);
+      form.querySelector('input[name="qty"]').value = '1';
+      const bc = form.querySelector('.barcode-input'); if(bc) bc.value = '';
+      const st = form.querySelector('.stock-view'); if(st) st.value = '-';
+    }catch(err){
+      alert('Parça eklerken hata oldu.');
+      console.error(err);
+    }
+  }, true);
+
+  // Auto open create modal
+  {% if auto_open_create %}
+  $('#modalWorkorder').modal('show');
+  {% endif %}
+});
+</script>
+{% endblock %}

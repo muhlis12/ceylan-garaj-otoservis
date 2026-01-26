@@ -1,0 +1,118 @@
+{% extends "base/layout.html" %}
+{% block title %}Is Emri #{{ o.id }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="m-0">Is Emri #{{ o.id }}</h3>
+    <div class="text-muted mt-1">
+      <strong>{{ o.plate_text|default:o.vehicle }}</strong>
+      • {{ o.get_kind_display }}
+      • <span class="badge {% if o.status == 'DONE' %}bg-success{% elif o.status == 'IN_PROGRESS' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+          {{ o.get_status_display }}
+        </span>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/workorders/">Geri</a>
+    <div class="btn-group">
+      <a class="btn btn-outline-secondary" href="/workorders/{{ o.id }}/status/WAITING/">Beklemede</a>
+      <a class="btn btn-outline-warning" href="/workorders/{{ o.id }}/status/IN_PROGRESS/">Islemde</a>
+      <a class="btn btn-outline-success" href="/workorders/{{ o.id }}/status/DONE/">Teslim</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <form method="post" class="card shadow-sm">
+      {% csrf_token %}
+      <div class="card-header">
+        <strong>Is Kalemleri (Iscilik / Parca)</strong>
+        <div class="text-muted small">Kalem ekle, kaydet. Toplamlar otomatik hesaplanir.</div>
+      </div>
+      <div class="card-body">
+        {{ formset.management_form }}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Kalem</th>
+                <th style="width:140px;">Tip</th>
+                <th style="width:120px;">Adet</th>
+                <th style="width:160px;">Birim Fiyat</th>
+                <th style="width:100px;">Sil</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in formset %}
+              <tr>
+                <td>
+                  {{ f.id }}
+                  {{ f.title }}
+                </td>
+                <td>
+                  <div class="form-check">
+                    {{ f.is_part }}
+                    <label class="form-check-label">Parca</label>
+                  </div>
+                  <div class="text-muted small">Isaretli degilse iscilik</div>
+                </td>
+                <td>{{ f.qty }}</td>
+                <td>{{ f.unit_price }}</td>
+                <td>
+                  {% if f.DELETE %}
+                    <div class="form-check">{{ f.DELETE }} <label class="form-check-label">Sil</label></div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer d-flex flex-wrap gap-3 align-items-center justify-content-between">
+        <div class="d-flex gap-3 align-items-center">
+          <div>
+            <label class="form-label m-0">Odeme Yontemi</label>
+            <input class="form-control" name="payment_method" value="{{ o.payment_method }}" placeholder="NAKIT / KART / HAVALE" />
+          </div>
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="is_paid" id="id_is_paid" {% if o.is_paid %}checked{% endif %}>
+            <label class="form-check-label" for="id_is_paid">Odendi</label>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Kaydet + Hesapla</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>Toplamlar</strong></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between"><span class="text-muted">Iscilik</span><strong>{{ o.labor_total }}</strong></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Parca</span><strong>{{ o.parts_total }}</strong></div>
+        <hr>
+        <div class="d-flex justify-content-between"><span class="text-muted">Genel Toplam</span><strong class="fs-5">{{ o.grand_total }}</strong></div>
+      </div>
+      <div class="card-footer small text-muted">
+        Not: Toplamlar kalemlerden hesaplanir.
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header"><strong>Not</strong></div>
+      <div class="card-body">
+        <div class="small text-muted">Sikayet / Not</div>
+        <div>{{ o.complaint|default:"-"|linebreaksbr }}</div>
+        {% if o.km %}
+          <div class="mt-2"><span class="text-muted">KM:</span> <strong>{{ o.km }}</strong></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

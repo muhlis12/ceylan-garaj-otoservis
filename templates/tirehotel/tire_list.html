@@ -1,0 +1,288 @@
+{% extends "base/layout.html" %}
+{% block title %}Lastik Oteli{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Lastik Otel (Depo1 - Raf/Göz)</h3>
+  <button class="btn btn-primary" data-toggle="modal" data-target="#modalTireCreate">
+    <i class="fas fa-plus"></i> Yeni Kayıt
+  </button>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0 datatable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Plaka</th>
+          <th>Sezon</th>
+          <th>Lastik</th>
+          <th>Konum</th>
+          <th>Ücret</th>
+          <th>Durum</th>
+          <th class="text-right">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for t in items %}
+        <tr>
+          <td>{{ t.id }}</td>
+          <td>{{ t.plate_text|default:"-" }}</td>
+          <td>{{ t.get_season_display }}</td>
+          <td>{{ t.brand }} {{ t.size }} ({{ t.qty }})</td>
+          <td>{{ t.rack_code }}/{{ t.slot_code }}</td>
+          <td>{{ t.price }}</td>
+          <td>
+            {% if t.is_active %}
+              <span class="badge badge-success">Depoda</span>
+            {% else %}
+              <span class="badge badge-secondary">Çıktı</span>
+            {% endif %}
+          </td>
+          <td class="text-right">
+            <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modalEdit{{ t.id }}">
+              Düzenle
+            </button>
+            <a class="btn btn-sm btn-outline-dark" href="/tirehotel/{{ t.id }}/print/" target="_blank">
+              Yazdır
+            </a>
+            {% if t.is_active %}
+              <form method="post" action="/tirehotel/{{ t.id }}/deliver/" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-success" type="submit">Teslim</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- ✅ EDIT MODAL -->
+        <div class="modal fade" id="modalEdit{{ t.id }}" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <form method="post" action="/tirehotel/{{ t.id }}/edit/">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">Lastik Kaydı Düzenle • {{ t.plate_text }}</h5>
+                  <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                    <div class="col-md-4">
+                      <label>Plaka</label>
+                      <input class="form-control" name="plate_text" value="{{ t.plate_text }}">
+                    </div>
+                    <div class="col-md-4">
+                      <label>Sezon</label>
+                      <select class="form-control" name="season">
+                        <option value="WINTER" {% if t.season == 'WINTER' %}selected{% endif %}>Kışlık</option>
+                        <option value="SUMMER" {% if t.season == 'SUMMER' %}selected{% endif %}>Yazlık</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label>Ücret</label>
+                      <input class="form-control" name="price" value="{{ t.price }}">
+                    </div>
+
+                    <div class="col-md-4 mt-2">
+                      <label>Marka</label>
+                      <input class="form-control" name="brand" value="{{ t.brand }}">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Ebat</label>
+                      <input class="form-control" name="size" value="{{ t.size }}" placeholder="205/55R16">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Adet</label>
+                      <input class="form-control" name="qty" value="{{ t.qty }}">
+                    </div>
+
+                    <div class="col-md-4 mt-2">
+                      <label>Raf</label>
+                      <input class="form-control" name="rack_code" value="{{ t.rack_code }}" placeholder="R14">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Göz</label>
+                      <input class="form-control" name="slot_code" value="{{ t.slot_code }}" placeholder="G3">
+                    </div>
+                    <div class="col-md-4 mt-2">
+                      <label>Son Tarih</label>
+                      <input class="form-control" type="date" name="due_at" value="{% if t.due_at %}{{ t.due_at|date:'Y-m-d' }}{% endif %}">
+                    </div>
+
+                    <div class="col-12 mt-2">
+                      <label>Not</label>
+                      <textarea class="form-control" name="notes" rows="3">{{ t.notes }}</textarea>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-primary" type="submit">Kaydet</button>
+                  <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Kayıt yok</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ✅ CREATE MODAL -->
+<div class="modal fade" id="modalTireCreate" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="/tirehotel/create/" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Yeni Lastik Otel Kaydı</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert alert-info py-2" id="plateMatchBoxTH" style="display:none;">
+            <strong id="matchPlateTH">-</strong>
+            <span class="text-muted">•</span>
+            <span id="matchCustomerTH">Müşteri bulunamadı</span>
+            <span class="text-muted" id="matchPhoneTH"></span>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <label>Plaka</label>
+              <input id="plate_th" name="plate" class="form-control" placeholder="06ABC123" autocomplete="off">
+            </div>
+            <div class="col-md-4">
+              <label>Sezon</label>
+              <select name="season" class="form-control">
+                <option value="WINTER">Kışlık</option>
+                <option value="SUMMER">Yazlık</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label>Ücret</label>
+              <input name="fee" class="form-control" placeholder="1000">
+            </div>
+
+            <div class="col-md-4 mt-2">
+              <label>Marka</label>
+              <input name="brand" class="form-control" placeholder="Pirelli">
+            </div>
+            <div class="col-md-4 mt-2">
+              <label>Ebat</label>
+              <input name="size" class="form-control" placeholder="205/55R16">
+            </div>
+            <div class="col-md-4 mt-2">
+              <label>Adet</label>
+              <input name="qty" class="form-control" value="4">
+            </div>
+
+            <div class="col-md-4 mt-2">
+              <label>Raf</label>
+              <input name="rack" class="form-control" placeholder="14">
+            </div>
+            <div class="col-md-4 mt-2">
+              <label>Göz</label>
+              <input name="slot" class="form-control" placeholder="3">
+            </div>
+            <div class="col-md-4 mt-2">
+              <label>Son Tarih</label>
+              <input name="due_at" type="date" class="form-control">
+            </div>
+
+            <div class="col-12 mt-3">
+              <hr>
+              <h6 class="mb-2">Plaka sistemde yoksa müşteri ekle</h6>
+            </div>
+
+            <div class="col-md-6">
+              <label>Ad Soyad</label>
+              <input id="full_name_th" name="full_name" class="form-control" placeholder="Ad Soyad">
+            </div>
+            <div class="col-md-3">
+              <label>Telefon</label>
+              <input id="phone_th" name="phone" class="form-control" placeholder="05xx...">
+            </div>
+            <div class="col-md-3">
+              <label>Email</label>
+              <input id="email_th" name="email" class="form-control" placeholder="opsiyonel">
+            </div>
+
+            <div class="col-12 mt-2">
+              <label>Not</label>
+              <textarea name="notes" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="col-12 mt-2">
+              <label>Foto (opsiyonel)</label>
+              <input type="file" name="photo" class="form-control">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Kaydet</button>
+          <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  const plateEl = document.getElementById('plate_th');
+  const box = document.getElementById('plateMatchBoxTH');
+  const matchPlate = document.getElementById('matchPlateTH');
+  const matchCustomer = document.getElementById('matchCustomerTH');
+  const matchPhone = document.getElementById('matchPhoneTH');
+
+  const fullNameEl = document.getElementById('full_name_th');
+  const phoneEl = document.getElementById('phone_th');
+  const emailEl = document.getElementById('email_th');
+
+  async function lookup(plate){
+    const res = await fetch(`/customers/api/plate-lookup/?q=${encodeURIComponent(plate)}`);
+    const data = await res.json();
+    if(!data.found){
+      box.style.display = 'none';
+      fullNameEl.value = "";
+      phoneEl.value = "";
+      emailEl.value = "";
+      return;
+    }
+    matchPlate.textContent = data.vehicle.plate;
+    matchCustomer.textContent = data.customer.full_name || "Müşteri";
+    matchPhone.textContent = data.customer.phone ? (" • " + data.customer.phone) : "";
+    box.style.display = 'block';
+    fullNameEl.value = data.customer.full_name || "";
+    phoneEl.value = data.customer.phone || "";
+    emailEl.value = data.customer.email || "";
+  }
+
+  if(!plateEl) return;
+  let t=null;
+  plateEl.addEventListener('input', () => {
+    clearTimeout(t);
+    t=setTimeout(() => {
+      const q=(plateEl.value||"").trim().toUpperCase();
+      if(q.length>=3) lookup(q);
+    }, 300);
+  });
+})();
+</script>
+
+{% endblock %}

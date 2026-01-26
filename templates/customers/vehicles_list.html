@@ -1,0 +1,25 @@
+{% extends "base/layout.html" %}
+{% block title %}Araclar{% endblock %}
+{% block content %}
+<h3>Araclar</h3>
+<p class="text-muted">Kayit/duzenleme icin admin paneli kullanabilirsin.</p>
+<div class="table-responsive">
+<table class="table table-striped align-middle">
+  <thead><tr><th>#</th><th>Plaka</th><th>Musteri</th><th>Marka/Model</th><th>Yil</th><th>Tarih</th></tr></thead>
+  <tbody>
+    {% for x in items %}
+      <tr>
+        <td>{{ x.id }}</td>
+        <td>{{ x.plate }}</td>
+        <td>{{ x.customer|default:"-" }}</td>
+        <td>{{ x.brand }} {{ x.model }}</td>
+        <td>{{ x.year|default:"-" }}</td>
+        <td>{{ x.created_at|date:"d.m.Y" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-muted">Kayit yok.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

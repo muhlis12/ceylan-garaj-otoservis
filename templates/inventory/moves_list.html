@@ -1,0 +1,35 @@
+{% extends "base/layout.html" %}
+{% block title %}Stok Hareketleri{% endblock %}
+{% block content %}
+<h3>Stok Hareketleri</h3>
+<div class="card">
+  <div class="card-body p-0">
+    <table id="movesTable" class="table table-striped mb-0">
+      <thead><tr><th>Tarih</th><th>Parça</th><th>Tip</th><th>Adet</th><th>Not</th></tr></thead>
+      <tbody>
+      {% for m in items %}
+        <tr>
+          <td>{{ m.created_at|date:"d.m.Y H:i" }}</td>
+          <td>{{ m.part.name }}</td>
+          <td>{{ m.move_type }}</td>
+          <td>{{ m.qty }}</td>
+          <td>{{ m.note }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Kayıt yok</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(function(){
+  if (!$.fn.DataTable.isDataTable('#movesTable')) {
+    $('#movesTable').DataTable({order:[[0,'desc']], language:{url:"//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json"}});
+  }
+});
+</script>
+{% endblock %}

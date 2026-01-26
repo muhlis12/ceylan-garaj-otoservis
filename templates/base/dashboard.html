@@ -1,0 +1,45 @@
+{% extends "base/layout.html" %}
+{% block title %}Dashboard - OtoServis Pro{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="h6 text-muted">Bugun Gelen Is (Giris)</div>
+        <div class="display-6">{{ work_today }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="h6 text-muted">Acik Is Emirleri</div>
+        <div class="display-6">{{ open_work }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="h6 text-muted">Lastik Otel (Aktif)</div>
+        <div class="display-6">{{ tire_active }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Hizli Islemler</h5>
+        <div class="d-flex gap-2">
+          <a class="btn btn-primary btn-sm" href="/workorders/new/">+ Is Emri (Yikama/Tamir)</a>
+          <a class="btn btn-danger btn-sm" href="/tirehotel/new/">+ Lastik Otel Kaydi</a>
+        </div>
+      </div>
+      <p class="text-muted mt-2 mb-0">Not: Is emirleri 'gelen siraya' gore Beklemede -> Islemde -> Teslim akisi ile ilerler.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
