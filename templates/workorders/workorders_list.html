@@ -85,10 +85,16 @@
                 </div>
 
                 <div class="mb-2"><b>Konu:</b> {{ o.subject|default:"-" }}</div>
-                <div class="mb-2"><b>Şikayet / Not:</b><div class="text-muted" style="white-space:pre-wrap;">{{ o.complaint|default:"-" }}</div></div>
+                <div class="mb-2">
+                  <b>Şikayet / Not:</b>
+                  <div class="text-muted" style="white-space:pre-wrap;">{{ o.complaint|default:"-" }}</div>
+                </div>
 
                 {% if o.staff_note %}
-                  <div class="mb-2"><b>Usta Notu:</b><div class="text-muted" style="white-space:pre-wrap;">{{ o.staff_note }}</div></div>
+                  <div class="mb-2">
+                    <b>Usta Notu:</b>
+                    <div class="text-muted" style="white-space:pre-wrap;">{{ o.staff_note }}</div>
+                  </div>
                 {% endif %}
 
                 {% if o.finished_at %}
@@ -376,9 +382,11 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/html5-qrcode"></script>
+
 <script>
 $(function(){
-  // DataTable
+
+  // ✅ DataTables: tek init, sütun hatası yok
   if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#workordersTable')) {
     $('#workordersTable').DataTable({
       responsive: true,
@@ -389,7 +397,7 @@ $(function(){
     });
   }
 
-  // ---- Create modal: hizmet seçenekleri + select2 ----
+  // ✅ Hizmet select2
   const OPTIONS = {
     'CAR_WASH': ['İç-Dış Yıkama','İç Yıkama','Dış Yıkama','Oto Kuaför','Genel Temizlik','Motor Yıkama','Alt Yıkama','Cilalı Yıkama'],
     'VEHICLE_REPAIR': ['Yağ Bakımı','Balata Değişimi','Ön Takım Bakımı','Şanzıman Bakımı ve Tamiri','Motor Genel Tamiri','Elektrik / Elektronik','Klima Bakımı'],
@@ -425,124 +433,9 @@ $(function(){
   $('#modalWorkorder').on('shown.bs.modal', function(){
     initServiceSelect();
     fillServices($('#kind_select').val());
-    $('#id_plate_text').trigger('input');
   });
 
-  // ---- Plaka autocomplete + lookup ----
-  const $plate = $('#id_plate_text');
-  const $suggest = $('#plateSuggest');
-  const $matchBox = $('#plateMatchBox');
-  const $matchPlate = $('#matchPlate');
-  const $matchCustomer = $('#matchCustomer');
-  const $matchPhone = $('#matchPhone');
-
-  const $customerCard = $('#customerCard');
-  const $fullName = $('#full_name');
-  const $phone = $('#phone');
-  const $email = $('#email');
-  const $brand = $('#vehicle_brand');
-  const $model = $('#vehicle_model');
-
-  function showMatch(plate, cname, cphone){
-    $matchPlate.text(plate || '-');
-    $matchCustomer.text(cname || 'Müşteri');
-    $matchPhone.text(cphone ? (' • ' + cphone) : '');
-    $matchBox.show();
-  }
-  function clearMatch(){ $matchBox.hide(); }
-  function setCustomerCard(found){
-    if(found){
-      $customerCard.hide();
-      $fullName.prop('readonly', true);
-      $phone.prop('readonly', true);
-      $email.prop('readonly', true);
-    } else {
-      $customerCard.show();
-      $fullName.prop('readonly', false);
-      $phone.prop('readonly', false);
-      $email.prop('readonly', false);
-    }
-  }
-  function setVehicleReadonly(found){
-    $brand.prop('readonly', found);
-    $model.prop('readonly', found);
-  }
-
-  async function lookupExactPlate(plate){
-    try{
-      const res = await fetch(`/customers/api/plate-lookup/?q=${encodeURIComponent(plate)}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
-      const data = await res.json();
-      if(!data.found){
-        clearMatch();
-        setCustomerCard(false);
-        setVehicleReadonly(false);
-        $fullName.val(''); $phone.val(''); $email.val('');
-        $brand.val(''); $model.val('');
-        return;
-      }
-      showMatch(data.vehicle?.plate || plate, data.customer?.full_name || 'Müşteri', data.customer?.phone || '');
-      setCustomerCard(true);
-      setVehicleReadonly(true);
-      $fullName.val(data.customer?.full_name || '');
-      $phone.val(data.customer?.phone || '');
-      $email.val(data.customer?.email || '');
-      $brand.val(data.vehicle?.brand || '');
-      $model.val(data.vehicle?.model || '');
-    }catch(e){
-      // sessiz
-    }
-  }
-
-  let plateTimer = null;
-  $plate.on('input', function(){
-    const q = ($plate.val() || '').trim().toUpperCase();
-    $plate.val(q);
-    clearTimeout(plateTimer);
-
-    if(q.length < 2){
-      $suggest.hide().empty();
-      clearMatch();
-      return;
-    }
-
-    plateTimer = setTimeout(async () => {
-      try{
-        const res = await fetch(`/api/plates/search/?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        const items = data.items || [];
-        $suggest.empty();
-        if(!items.length){
-          $suggest.hide();
-          await lookupExactPlate(q);
-          return;
-        }
-        items.forEach(it => {
-          const btn = $('<button type="button" class="list-group-item list-group-item-action"></button>');
-          btn.html(`<strong>${it.plate}</strong><span class="text-muted">${it.customer_name ? ' • '+it.customer_name : ''}${it.customer_phone ? ' • '+it.customer_phone : ''}</span>`);
-          btn.on('click', async () => {
-            $plate.val(it.plate);
-            $suggest.hide().empty();
-            await lookupExactPlate(it.plate);
-          });
-          $suggest.append(btn);
-        });
-        $suggest.show();
-      }catch(e){
-        $suggest.hide().empty();
-      }
-    }, 200);
-  });
-
-  $plate.on('blur', function(){
-    const q = ($plate.val() || '').trim().toUpperCase();
-    if(q.length >= 2){ setTimeout(() => lookupExactPlate(q), 150); }
-  });
-
-  $(document).on('click', function(e){
-    if(!$(e.target).closest('#plateSuggest, #id_plate_text').length) $suggest.hide();
-  });
-
-  // ---- Parça Select2 + stok/fiyat otomatik ----
+  // ✅ Parça select2 (detay modalları)
   function initPartSelect(modalEl){
     const $modal = $(modalEl);
     $modal.find('.part-select').each(function(){
@@ -575,66 +468,7 @@ $(function(){
     if (window.jQuery) initPartSelect(ev.target);
   });
 
-  async function selectByBarcode(formEl, code){
-    code = (code || '').trim();
-    if(!code) return;
-    const res = await fetch('/inventory/api/parts/search/?q=' + encodeURIComponent(code));
-    const data = await res.json();
-    const results = (data && data.results) ? data.results : [];
-    if(!results.length){ alert('Bu barkodla parça bulunamadı: ' + code); return; }
-    const item = results[0];
-    const $form = $(formEl);
-    const $sel = $form.find('.part-select');
-    const option = new Option(item.text, item.id, true, true);
-    $sel.append(option).trigger('change');
-    $form.find('.unit-price').val(item.price || '0');
-    $form.find('.stock-view').val(item.stock || '-');
-    $form.find('.barcode-input').val(item.barcode || code);
-  }
-
-  document.addEventListener('keydown', function(e){
-    const inp = e.target.closest('.barcode-input');
-    if(!inp) return;
-    if(e.key === 'Enter'){
-      e.preventDefault();
-      selectByBarcode(inp.closest('form'), inp.value);
-    }
-  });
-
-  async function openScanner(formEl){
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = `
-      <div style="width:520px;max-width:92vw;background:#fff;border-radius:10px;padding:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <strong>Barkod Tara</strong>
-          <button id="scanClose" style="border:0;background:#eee;border-radius:6px;padding:6px 10px;">Kapat</button>
-        </div>
-        <div id="qrReader" style="margin-top:10px;"></div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    const qr = new Html5Qrcode('qrReader');
-    async function stopAll(){ try{ await qr.stop(); }catch(e){} overlay.remove(); }
-    overlay.querySelector('#scanClose').addEventListener('click', stopAll);
-    try{
-      await qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 320, height: 200 } }, async (decodedText) => {
-        $(formEl).find('.barcode-input').val(decodedText);
-        await selectByBarcode(formEl, decodedText);
-        await stopAll();
-      });
-    }catch(e){
-      alert('Kamera açılamadı. HTTPS/izin kontrol et.');
-      await stopAll();
-    }
-  }
-
-  document.addEventListener('click', function(e){
-    const btn = e.target.closest('.btn-scan');
-    if(!btn) return;
-    openScanner(btn.closest('form'));
-  });
-
+  // ✅ AJAX parça ekle -> totals + parça listesi güncelle
   async function ajaxRefreshFromReturnedHTML(htmlText, orderId){
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, 'text/html');
@@ -657,23 +491,18 @@ $(function(){
     const orderId = form.getAttribute('data-order-id');
     const url = form.getAttribute('action');
     const fd = new FormData(form);
+
     try{
       const res = await fetch(url, { method:'POST', body: fd, headers: {'X-Requested-With':'XMLHttpRequest'} });
       const text = await res.text();
       await ajaxRefreshFromReturnedHTML(text, orderId);
       form.querySelector('input[name="qty"]').value = '1';
-      const bc = form.querySelector('.barcode-input'); if(bc) bc.value = '';
-      const st = form.querySelector('.stock-view'); if(st) st.value = '-';
     }catch(err){
       alert('Parça eklerken hata oldu.');
       console.error(err);
     }
   }, true);
 
-  // Auto open create modal
-  {% if auto_open_create %}
-  $('#modalWorkorder').modal('show');
-  {% endif %}
 });
 </script>
 {% endblock %}
