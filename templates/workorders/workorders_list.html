@@ -337,12 +337,103 @@
 {% endblock %}
 
 {% block extra_js %}
+
 <script>
 $(function(){
-  // DataTables güvenli init
+  // ✅ DataTables güvenli init
   if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#workordersTable')) {
-    $('#workordersTable').DataTable({ order:[[0,'desc']] });
+    $('#workordersTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      pageLength: 10,
+      order: [[0,'desc']],
+      language: { url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json' }
+    });
   }
 });
 </script>
+
+<script>
+(function(){
+  const OPTIONS = {
+    'CAR_WASH': [
+      'İç-Dış Yıkama','İç Yıkama','Dış Yıkama','Oto Kuaför','Genel Temizlik',
+      'Motor Yıkama','Alt Yıkama','Cilalı Yıkama'
+    ],
+    'VEHICLE_REPAIR': [
+      'Yağ Bakımı','Balata Değişimi','Ön Takım Bakımı','Şanzıman Bakımı ve Tamiri',
+      'Motor Genel Tamiri','Elektrik / Elektronik','Klima Bakımı'
+    ],
+    'TIRE_REPAIR': [
+      'Lastik Değişimi','Lastik Tamiri','Lastik Balansı'
+    ]
+  };
+
+  function initServiceSelect2(){
+    if(!(window.jQuery && jQuery.fn && jQuery.fn.select2)) return;
+    const $sel = jQuery('#service_select');
+    if(!$sel.length) return;
+
+    if($sel.hasClass('select2-hidden-accessible')){
+      $sel.select2('destroy');
+    }
+    $sel.select2({
+      width: '100%',
+      dropdownParent: jQuery('#modalWorkorder'),
+      placeholder: 'Hizmet seç...',
+      closeOnSelect: false
+    });
+  }
+
+  function fillServices(kind){
+    const sel = document.getElementById('service_select');
+    if(!sel) return;
+
+    const arr = OPTIONS[kind] || [];
+    sel.innerHTML = "";
+    for (const txt of arr){
+      const opt = document.createElement("option");
+      opt.value = txt;
+      opt.textContent = txt;
+      sel.appendChild(opt);
+    }
+
+    // seçimi temizle
+    if (window.jQuery && jQuery.fn && jQuery.fn.select2 && jQuery(sel).hasClass('select2-hidden-accessible')) {
+      jQuery(sel).val(null).trigger('change');
+    } else {
+      sel.selectedIndex = -1;
+    }
+  }
+
+  function updateSubject(){
+    const sel = document.getElementById('service_select');
+    const subject = document.getElementById('subject_input');
+    if(!sel || !subject) return;
+
+    const vals = Array.from(sel.selectedOptions).map(o => o.value);
+    subject.value = vals.join(' / ');
+  }
+
+  // ✅ Modal açılınca kesin çalıştır
+  if(window.jQuery){
+    jQuery('#modalWorkorder').on('shown.bs.modal', function(){
+      initServiceSelect2();
+      const kind = document.getElementById('kind_select')?.value || 'CAR_WASH';
+      fillServices(kind);
+      updateSubject();
+    });
+
+    jQuery(document).on('change', '#kind_select', function(){
+      fillServices(this.value);
+      const subject = document.getElementById('subject_input');
+      if(subject) subject.value = '';
+    });
+
+    jQuery(document).on('change', '#service_select', updateSubject);
+  }
+
+})();
+</script>
+
 {% endblock %}
