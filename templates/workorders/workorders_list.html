@@ -31,6 +31,7 @@
         </tr>
       </thead>
       <tbody>
+
       {% for o in items %}
         <tr>
           <td>{{ o.id }}</td>
@@ -122,23 +123,6 @@
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                       <button class="btn btn-success btn-block" type="submit">Ekle</button>
-                    </div>
-                  </div>
-
-                  <div class="row mt-2">
-                    <div class="col-md-6">
-                      <label>Barkod</label>
-                      <div class="input-group">
-                        <input type="text" class="form-control barcode-input" placeholder="Barkodu okut ya da yaz">
-                        <div class="input-group-append">
-                          <button class="btn btn-outline-primary btn-scan" type="button">📷 Tara</button>
-                        </div>
-                      </div>
-                      <small class="text-muted">Enter basınca parça otomatik seçilir.</small>
-                    </div>
-                    <div class="col-md-6">
-                      <label>Stok</label>
-                      <input type="text" class="form-control stock-view" value="-" readonly>
                     </div>
                   </div>
                 </form>
@@ -262,8 +246,18 @@
         </div>
 
       {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-4">Kayıt yok</td></tr>
+        <!-- ❌ colspan YOK -> DataTables hata vermez -->
+        <tr>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td class="text-center text-muted">Kayıt yok</td>
+          <td>-</td>
+          <td class="text-right">-</td>
+        </tr>
       {% endfor %}
+
       </tbody>
     </table>
   </div>
@@ -297,82 +291,44 @@
                 <option value="TIRE_REPAIR">Lastik</option>
               </select>
             </div>
+
             <div class="col-md-4">
               <label>Plaka</label>
-              <div class="position-relative">
-                <input id="id_plate_text" name="plate_text" class="form-control" placeholder="06ABC123" autocomplete="off">
-                <div class="list-group position-absolute w-100 shadow" id="plateSuggest" style="z-index:20; display:none;"></div>
-              </div>
+              <input id="id_plate_text" name="plate_text" class="form-control" placeholder="06ABC123">
             </div>
+
             <div class="col-md-4">
               <label>KM</label>
               <input name="km" class="form-control" placeholder="125000">
             </div>
 
             <div class="col-md-6 mt-2">
-              <label>Araç Marka</label>
-              <input id="vehicle_brand" name="vehicle_brand" class="form-control" placeholder="Örn: Renault">
-            </div>
-            <div class="col-md-6 mt-2">
-              <label>Araç Model</label>
-              <input id="vehicle_model" name="vehicle_model" class="form-control" placeholder="Örn: Clio">
-            </div>
-
-            <div class="col-md-6 mt-2">
-              <label>Hizmet / İşlem (Çoklu Seçim)</label>
+              <label>Hizmet / İşlem</label>
               <select id="service_select" class="form-control" multiple></select>
-              <small class="text-muted">Tür seçince seçenekler otomatik gelir.</small>
             </div>
             <div class="col-md-6 mt-2">
-              <label>Konu (otomatik)</label>
-              <input id="subject_input" name="subject" class="form-control" placeholder="Örn: İç-Dış Yıkama / Motor Yıkama">
-            </div>
-
-            <div class="col-12 mt-2">
-              <label>Şikayet / Not</label>
-              <textarea name="complaint" class="form-control" rows="2"></textarea>
-            </div>
-
-            <div class="col-md-4 mt-2">
-              <label>Ödeme Yöntemi</label>
-              <input name="payment_method" class="form-control" placeholder="NAKIT / KART / HAVALE">
-            </div>
-            <div class="col-md-4 mt-2">
-              <label>İşçilik (₺) (Tahmini)</label>
-              <input name="labor_total" class="form-control" value="0">
-            </div>
-            <div class="col-md-4 mt-2">
-              <label>Parça (₺) (Tahmini)</label>
-              <input name="parts_total" class="form-control" value="0">
+              <label>Konu</label>
+              <input id="subject_input" name="subject" class="form-control">
             </div>
           </div>
 
-          <div class="card card-outline card-secondary mt-3" id="customerCard">
-            <div class="card-header"><h3 class="card-title">Plaka sistemde yoksa müşteri ekle</h3></div>
+          <div class="card mt-3" id="customerCard">
             <div class="card-body">
               <div class="row">
-                <div class="col-md-6">
-                  <label>Müşteri Ad Soyad</label>
-                  <input id="full_name" name="full_name" class="form-control" placeholder="Ad Soyad">
-                </div>
-                <div class="col-md-3">
-                  <label>Telefon</label>
-                  <input id="phone" name="phone" class="form-control" placeholder="05xx...">
-                </div>
-                <div class="col-md-3">
-                  <label>Email</label>
-                  <input id="email" name="email" class="form-control" placeholder="opsiyonel">
-                </div>
+                <div class="col-md-6"><input id="full_name" name="full_name" class="form-control" placeholder="Ad Soyad"></div>
+                <div class="col-md-3"><input id="phone" name="phone" class="form-control" placeholder="Telefon"></div>
+                <div class="col-md-3"><input id="email" name="email" class="form-control" placeholder="Email"></div>
               </div>
-              <small class="text-muted d-block mt-2">Plaka bulunduysa bu kart otomatik kapanır.</small>
             </div>
           </div>
+
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-primary" type="submit">Kaydet</button>
           <button class="btn btn-secondary" type="button" data-dismiss="modal">Kapat</button>
         </div>
+
       </form>
     </div>
   </div>
@@ -381,128 +337,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/html5-qrcode"></script>
-
 <script>
 $(function(){
-
-  // ✅ DataTables: tek init, sütun hatası yok
+  // DataTables güvenli init
   if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#workordersTable')) {
-    $('#workordersTable').DataTable({
-      responsive: true,
-      autoWidth: false,
-      pageLength: 10,
-      order: [[0,'desc']],
-      language: { url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json' }
-    });
+    $('#workordersTable').DataTable({ order:[[0,'desc']] });
   }
-
-  // ✅ Hizmet select2
-  const OPTIONS = {
-    'CAR_WASH': ['İç-Dış Yıkama','İç Yıkama','Dış Yıkama','Oto Kuaför','Genel Temizlik','Motor Yıkama','Alt Yıkama','Cilalı Yıkama'],
-    'VEHICLE_REPAIR': ['Yağ Bakımı','Balata Değişimi','Ön Takım Bakımı','Şanzıman Bakımı ve Tamiri','Motor Genel Tamiri','Elektrik / Elektronik','Klima Bakımı'],
-    'TIRE_REPAIR': ['Lastik Değişimi','Lastik Tamiri','Lastik Balansı']
-  };
-
-  function initServiceSelect(){
-    const $sel = $('#service_select');
-    if (!$sel.length) return;
-    if ($sel.hasClass('select2-hidden-accessible')) $sel.select2('destroy');
-    $sel.select2({ width:'100%', dropdownParent: $('#modalWorkorder'), placeholder:'Hizmet seç...', closeOnSelect:false });
-  }
-
-  function fillServices(kind){
-    const arr = OPTIONS[kind] || [];
-    const $sel = $('#service_select');
-    $sel.empty();
-    arr.forEach(t => $sel.append(new Option(t, t, false, false)));
-    initServiceSelect();
-    $sel.val(null).trigger('change');
-  }
-
-  $(document).on('change', '#service_select', function(){
-    const vals = $('#service_select').val() || [];
-    $('#subject_input').val(vals.join(' / '));
-  });
-
-  $(document).on('change', '#kind_select', function(){
-    fillServices(this.value);
-    $('#subject_input').val('');
-  });
-
-  $('#modalWorkorder').on('shown.bs.modal', function(){
-    initServiceSelect();
-    fillServices($('#kind_select').val());
-  });
-
-  // ✅ Parça select2 (detay modalları)
-  function initPartSelect(modalEl){
-    const $modal = $(modalEl);
-    $modal.find('.part-select').each(function(){
-      const $sel = $(this);
-      if ($sel.hasClass('select2-hidden-accessible')) return;
-      $sel.select2({
-        width: '100%',
-        dropdownParent: $modal,
-        placeholder: 'Parça ara (isim/barkod/sku)...',
-        ajax: {
-          url: '/inventory/api/parts/search/',
-          dataType: 'json',
-          delay: 200,
-          data: params => ({ q: params.term || '' }),
-          processResults: data => data
-        }
-      });
-
-      $sel.on('select2:select', function(e){
-        const item = e.params.data;
-        const $form = $sel.closest('form');
-        $form.find('.unit-price').val(item.price || '0');
-        $form.find('.stock-view').val(item.stock || '-');
-        $form.find('.barcode-input').val(item.barcode || '');
-      });
-    });
-  }
-
-  document.addEventListener('shown.bs.modal', function(ev){
-    if (window.jQuery) initPartSelect(ev.target);
-  });
-
-  // ✅ AJAX parça ekle -> totals + parça listesi güncelle
-  async function ajaxRefreshFromReturnedHTML(htmlText, orderId){
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlText, 'text/html');
-    const newPartsBox = doc.querySelector('#partsBox-' + orderId);
-    const newTotals = doc.querySelector('#totalsBox-' + orderId);
-    if(newPartsBox){
-      const cur = document.querySelector('#partsBox-' + orderId);
-      if(cur) cur.innerHTML = newPartsBox.innerHTML;
-    }
-    if(newTotals){
-      const curT = document.querySelector('#totalsBox-' + orderId);
-      if(curT) curT.innerHTML = newTotals.innerHTML;
-    }
-  }
-
-  document.addEventListener('submit', async function(e){
-    const form = e.target.closest('.part-add-form');
-    if(!form) return;
-    e.preventDefault();
-    const orderId = form.getAttribute('data-order-id');
-    const url = form.getAttribute('action');
-    const fd = new FormData(form);
-
-    try{
-      const res = await fetch(url, { method:'POST', body: fd, headers: {'X-Requested-With':'XMLHttpRequest'} });
-      const text = await res.text();
-      await ajaxRefreshFromReturnedHTML(text, orderId);
-      form.querySelector('input[name="qty"]').value = '1';
-    }catch(err){
-      alert('Parça eklerken hata oldu.');
-      console.error(err);
-    }
-  }, true);
-
 });
 </script>
 {% endblock %}
