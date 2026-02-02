@@ -1,0 +1,95 @@
+{% extends "base/worker_layout.html" %}
+{% block title %}Usta İş Detayı{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 px-md-2">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+    <div>
+      <h4 class="m-0">Usta İş Detayı • #{{ o.id }}</h4>
+      <div class="text-muted small mt-1">
+        <span class="fw-bold">{{ o.plate_display|default:"-" }}</span>
+        • {{ o.get_kind_display }}
+        • <span class="badge {% if o.status == 'DONE' %}bg-success{% elif o.status == 'IN_PROGRESS' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ o.get_status_display }}</span>
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary" href="/workorders/my/"><i class="fas fa-arrow-left me-1"></i>Geri</a>
+  </div>
+
+  {% if repeat_info %}
+    <div class="alert alert-warning d-flex align-items-start gap-2">
+      <i class="fas fa-exclamation-triangle mt-1"></i>
+      <div>
+        <div class="fw-bold">Tekrar geliş uyarısı</div>
+        <div class="small">
+          Bu plakanın <b>son {{ repeat_info.delta_days }} gün</b> içinde tamamlanan bir işi var (İş Emri #{{ repeat_info.last_id }}).
+          Garanti / tekrar kontrol gerekebilir.
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-2 small">
+        <div class="col-12 col-md-6"><b>Müşteri:</b> {% if o.customer %}{{ o.customer.full_name }}{% else %}-{% endif %}</div>
+        <div class="col-12 col-md-6"><b>KM:</b> {{ o.km|default:"-" }}</div>
+        <div class="col-12"><b>Şikayet/Not:</b> {{ o.complaint|default:"-" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" class="card shadow-sm">
+    {% csrf_token %}
+    <div class="card-body">
+
+      {% if o.status != 'IN_PROGRESS' %}
+        <button class="btn btn-warning w-100 mb-3 py-2" type="submit" name="action" value="start">
+          <i class="fas fa-play me-1"></i>İşlemi Başlat
+        </button>
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Yapılan İşlemler</label>
+        <div class="row g-2">
+          {% for s in services_catalog %}
+            <div class="col-6 col-md-4">
+              <label class="btn btn-outline-primary w-100 text-start">
+                <input class="form-check-input me-2" type="checkbox" name="services" value="{{ s }}"
+                  {% if s in o.worker_services %}checked{% endif %}>
+                {{ s }}
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="form-text">Seçimlerin kaydedilir (fiyat görünmez).</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Usta Notu</label>
+        <textarea name="worker_note" class="form-control" rows="3" placeholder="Yapılan işlemin kısa açıklaması...">{{ o.worker_note }}</textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Bu işi yapan kalfa adı</label>
+        <input name="finisher_name" class="form-control" value="{{ o.worker_finished_by_name }}" placeholder="Örn: Ali / Mehmet / Hasan">
+        <div class="form-text">Sadece isim yazman yeterli (kalfaya ayrı kullanıcı gerekmez).</div>
+      </div>
+
+    </div>
+
+    <!-- موبildə rahat: altta sabit aksiyon bar -->
+    <div class="card-footer bg-white">
+      <div class="d-grid d-md-flex gap-2">
+        <button class="btn btn-outline-primary flex-fill py-2" type="submit" name="action" value="save_note">
+          <i class="fas fa-save me-1"></i>Kaydet
+        </button>
+        <button class="btn btn-success flex-fill py-2" type="submit" name="action" value="finish">
+          <i class="fas fa-check me-1"></i>Bitirdim (Admin'e gönder)
+        </button>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

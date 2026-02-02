@@ -51,6 +51,14 @@ def tire_create(request):
             post["rack_code"] = f"R{post.get('rack')}" if post.get("rack") and not str(post.get('rack')).startswith("R") else post.get("rack")
         if not post.get("slot_code") and post.get("slot"):
             post["slot_code"] = f"G{post.get('slot')}" if post.get("slot") and not str(post.get('slot')).startswith("G") else post.get("slot")
+
+        # ✅ Zorunlu alanlar gelmiyorsa default ver (hızlı kayıt için)
+        if not post.get("rack_code"):
+            post["rack_code"] = "R1"
+        if not post.get("slot_code"):
+            post["slot_code"] = "G1"
+        if not post.get("price"):
+            post["price"] = "0"
         # brand/size from tire_text (best-effort)
         if not post.get("brand") and post.get("tire_text"):
             post["brand"] = post.get("tire_text")

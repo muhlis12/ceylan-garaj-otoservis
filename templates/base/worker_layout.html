@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}USTA PANEL{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- AdminLTE (Bootstrap4) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+
+  <!-- Select2 (usta parça arama vs.) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+
+  <style>
+    .brand-link{ background:#111 !important; }
+    .brand-text{ color:#f1c40f !important; font-weight:800; letter-spacing:.5px; }
+
+    /* Watermark */
+    .app-watermark{
+      position: fixed;
+      inset: 0;
+      background: url('/static/img/ceylan-garaj-logo.png') center center / 520px auto no-repeat;
+      opacity: .06;
+      pointer-events: none;
+      z-index: -1;
+      filter: grayscale(100%);
+    }
+
+    .wrapper{ position: relative; }
+    .select2-container--open{ z-index: 1060; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="hold-transition sidebar-mini">
+  <div class="app-watermark" aria-hidden="true"></div>
+  <div class="wrapper">
+
+    <!-- NAVBAR -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/accounts/logout-get/"><i class="fas fa-sign-out-alt"></i> Çıkış</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- SIDEBAR (USTA: sadece iş emirleri) -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <a href="/workorders/my/" class="brand-link">
+        <span class="brand-text font-weight-light">CEYLAN GARAJ</span>
+      </a>
+
+      <div class="sidebar">
+        <nav class="mt-2">
+          <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+            <li class="nav-item">
+              <a href="/workorders/my/" class="nav-link">
+                <i class="nav-icon fas fa-tools"></i>
+                <p>İş Emirlerim</p>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <div class="content-wrapper">
+      <section class="content pt-3">
+        <div class="container-fluid">
+          {% if messages %}
+            {% for m in messages %}
+              <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+            {% endfor %}
+          {% endif %}
+          {% block content %}{% endblock %}
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,9 +1,9 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from .views import logout_get
+from .views import logout_get, RoleBasedLoginView
 
 urlpatterns = [
-    path("login/", auth_views.LoginView.as_view(template_name="accounts/login.html"), name="login"),
+    path("login/", RoleBasedLoginView.as_view(template_name="accounts/login.html"), name="login"),
 
     # POST logout (Django default)
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),

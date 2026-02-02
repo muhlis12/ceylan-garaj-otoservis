@@ -1,0 +1,65 @@
+{% extends "base/layout.html" %}
+{% block title %}Kullanıcı Yönetimi{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h3 class="mb-0">Kullanıcı Yönetimi</h3>
+  <a href="/users/new/" class="btn btn-sm btn-danger">
+    <i class="fas fa-user-plus"></i> Yeni Kullanıcı
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form class="form-inline mb-3" method="get">
+      <input type="text" name="q" value="{{ q|default:'' }}" class="form-control mr-2" placeholder="Kullanıcı adı ara...">
+      <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Ara</button>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr>
+            <th>Kullanıcı</th>
+            <th>Ad Soyad</th>
+            <th>Mail</th>
+            <th>Gruplar</th>
+            <th>Durum</th>
+            <th class="text-right">İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in items %}
+          <tr>
+            <td><strong>{{ u.username }}</strong></td>
+            <td>{{ u.get_full_name|default:"-" }}</td>
+            <td>{{ u.email|default:"-" }}</td>
+            <td>
+              {% for g in u.groups.all %}
+                <span class="badge badge-dark">{{ g.name }}</span>
+              {% empty %}
+                <span class="text-muted">-</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% if u.is_active %}
+                <span class="badge badge-success">Aktif</span>
+              {% else %}
+                <span class="badge badge-secondary">Pasif</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a class="btn btn-sm btn-outline-dark" href="/users/{{ u.id }}/edit/">
+                <i class="fas fa-edit"></i> Düzenle
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted">Kullanıcı yok.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

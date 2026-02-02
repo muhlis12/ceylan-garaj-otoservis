@@ -1,12 +1,19 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.contrib.auth import get_user_model
+from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse
+
+User = get_user_model()
 
 from .models import Branch, BranchMembership
 from apps.workorders.models import WorkOrder
 from apps.tirehotel.models import TireHotelEntry
 from apps.customers.models import Vehicle
+
+from apps.core.roles import is_admin
+from .forms import AdminUserCreateForm, AdminUserUpdateForm
 
 
 @login_required
@@ -122,3 +129,62 @@ def api_plate_search(request):
         )
     return JsonResponse({"items": items})
 
+
+def _require_admin(request):
+    if not is_admin(request.user):
+        messages.error(request, "Bu sayfaya giriş yetkin yok.")
+        return False
+    return True
+
+
+@login_required
+def users_list(request):
+    if not _require_admin(request):
+        return redirect("/")
+    q = (request.GET.get("q") or "").strip()
+    qs = User.objects.all().order_by("username")
+    if q:
+        qs = qs.filter(username__icontains=q)
+    return render(request, "core/users_list.html", {"items": qs, "q": q})
+
+
+@login_required
+def user_create(request):
+    if not _require_admin(request):
+        return redirect("/")
+
+    if request.method == "POST":
+        form = AdminUserCreateForm(request.POST)
+        if form.is_valid():
+            u = form.save()
+            u.groups.set(form.cleaned_data.get("groups"))
+            messages.success(request, "Kullanıcı oluşturuldu ✅")
+            return redirect("/users/")
+    else:
+        form = AdminUserCreateForm()
+
+    return render(request, "core/user_form.html", {"form": form, "mode": "create"})
+
+
+@login_required
+def user_edit(request, user_id: int):
+    if not _require_admin(request):
+        return redirect("/")
+
+    user_obj = get_object_or_404(User, id=user_id)
+    if request.method == "POST":
+        form = AdminUserUpdateForm(request.POST, instance=user_obj)
+        if form.is_valid():
+            u = form.save(commit=False)
+            u.save()
+            u.groups.set(form.cleaned_data.get("groups"))
+            p1 = form.cleaned_data.get("new_password1")
+            if p1:
+                u.set_password(p1)
+                u.save()
+            messages.success(request, "Kullanıcı güncellendi ✅")
+            return redirect("/users/")
+    else:
+        form = AdminUserUpdateForm(instance=user_obj, initial={"groups": user_obj.groups.all()})
+
+    return render(request, "core/user_form.html", {"form": form, "mode": "edit", "user_obj": user_obj})

@@ -1,0 +1,78 @@
+{% extends "base/worker_layout.html" %}
+{% block title %}Usta İş Akışı{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+  <div>
+    <h4 class="m-0">Usta İş Akışı</h4>
+    <div class="text-muted small">Devam eden işleri buradan yönet.</div>
+  </div>
+</div>
+
+<!-- Mobil kart görünümü -->
+<div class="d-md-none">
+  {% for o in items %}
+    {% with plate=o.plate_display|default:o.plate_text|default:"-" %}
+    <div class="card shadow-sm mb-2">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="fw-bold">{{ plate }}</div>
+            <div class="text-muted small">#{{ o.id }} • {{ o.get_kind_display }}</div>
+          </div>
+          <div class="text-end">
+            {% if o.is_repeat %}
+              <span class="badge bg-warning text-dark mb-1">Tekrar</span><br>
+            {% endif %}
+            <span class="badge {% if o.status == 'IN_PROGRESS' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ o.get_status_display }}</span>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">{{ o.created_at|date:"d.m.Y H:i" }}</div>
+
+        <a class="btn btn-primary w-100 mt-2 py-2" href="/workorders/my/{{ o.id }}/">
+          Aç <i class="fas fa-chevron-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+    {% endwith %}
+  {% empty %}
+    <div class="alert alert-info">Şu an iş yok.</div>
+  {% endfor %}
+</div>
+
+<!-- Masaüstü tablo görünümü -->
+<div class="card shadow-sm d-none d-md-block">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>#</th><th>Plaka</th><th>Tür</th><th>Durum</th><th>Tarih</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for o in items %}
+        {% with plate=o.plate_display|default:o.plate_text|default:"-" %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>
+            {{ plate }}
+            {% if o.is_repeat %}
+              <span class="badge bg-warning text-dark ms-2">Tekrar</span>
+            {% endif %}
+          </td>
+          <td>{{ o.get_kind_display }}</td>
+          <td>{{ o.get_status_display }}</td>
+          <td>{{ o.created_at|date:"d.m.Y H:i" }}</td>
+          <td class="text-right">
+            <a class="btn btn-sm btn-primary" href="/workorders/my/{{ o.id }}/">Aç</a>
+          </td>
+        </tr>
+        {% endwith %}
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted p-4">Şu an iş yok.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -84,7 +84,7 @@ def part_create(request):
         messages.error(request, "Parça adı zorunlu.")
         return redirect("/inventory/parts/")
 
-    Part.objects.create(
+    p = Part.objects.create(
         branch=branch,
         name=name,
         sku=sku,
@@ -95,8 +95,11 @@ def part_create(request):
         cost_price=cost_price,
         min_stock=min_stock,
     )
-    p = Part.objects.create(...)
-    p.ensure_barcode()
+    # barcode otomatik üretim (modelde varsa)
+    try:
+        p.ensure_barcode()
+    except Exception:
+        pass
 
     messages.success(request, "Parça kaydedildi ✅")
     return redirect("/inventory/parts/")

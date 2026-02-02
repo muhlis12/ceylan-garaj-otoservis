@@ -1,14 +1,21 @@
 """
-OtoServis Pro - Django settings
+CEYLAN GARAJ - Django settings (FINAL)
 """
 
 from pathlib import Path
 import os
 
-# -------------------------------------------------
-# BASE
-# -------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# -------------------------------------------------
+# ENV LOADER (Windows/local için .env okur)
+# Sunucuda systemd EnvironmentFile zaten env basar.
+# -------------------------------------------------
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env")
+except Exception:
+    pass
 
 
 def env(key: str, default=None):
@@ -19,10 +26,14 @@ def env(key: str, default=None):
 # SECURITY
 # -------------------------------------------------
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-unsafe-secret")
-DEBUG = env("DJANGO_DEBUG", "1") == "1"
+DEBUG = str(env("DJANGO_DEBUG", "1")).lower() in ("1", "true", "yes", "on")
 
 allowed_hosts_raw = env("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
+
+# Proxy arkasında (nginx) kullanacaksan
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # -------------------------------------------------
@@ -37,7 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # Local apps
+    # Local
     "accounts",
     "apps.core",
     "apps.customers",
@@ -47,31 +58,26 @@ INSTALLED_APPS = [
     "apps.inventory.apps.InventoryConfig",
     "apps.reports",
     "apps.marketing.apps.MarketingConfig",
-
-    
 ]
 
+# ✅ Custom User kullanıyorsan (sende var gibi duruyor)
+AUTH_USER_MODEL = "accounts.User"
 
-# -------------------------------------------------
-# MIDDLEWARE
-# -------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "apps.core.middleware.LoginRequiredMiddleware",
+
+    # ✅ usta/admin kitleme
+    "apps.core.middleware.WorkerLockdownMiddleware",
+
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    
 ]
 
 
-# -------------------------------------------------
-# URL / WSGI
-# -------------------------------------------------
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
@@ -82,7 +88,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # global templates
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -91,6 +97,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.active_branch",
+               
             ],
         },
     },
@@ -98,18 +105,28 @@ TEMPLATES = [
 
 
 # -------------------------------------------------
-# DATABASE
+# DATABASE (PostgreSQL / SQLite fallback)
 # -------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": env("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": env("DB_NAME", BASE_DIR / "db.sqlite3"),
-        "USER": env("DB_USER", ""),
-        "PASSWORD": env("DB_PASSWORD", ""),
-        "HOST": env("DB_HOST", ""),
-        "PORT": env("DB_PORT", ""),
+DB_ENGINE = env("DB_ENGINE", "django.db.backends.sqlite3")
+
+if "postgres" in (DB_ENGINE or ""):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME", "ceylan_garaj_db"),
+            "USER": env("DB_USER", "postgres"),
+            "PASSWORD": env("DB_PASSWORD", ""),
+            "HOST": env("DB_HOST", "127.0.0.1"),
+            "PORT": env("DB_PORT", "5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": env("DB_NAME", str(BASE_DIR / "db.sqlite3")),
+        }
+    }
 
 
 # -------------------------------------------------
@@ -119,6 +136,10 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
+
+# -------------------------------------------------
+# PASSWORD VALIDATORS
+# -------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -130,8 +151,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # -------------------------------------------------
 # LANGUAGE / TIME
 # -------------------------------------------------
-LANGUAGE_CODE = "tr"
-TIME_ZONE = "Europe/Istanbul"
+LANGUAGE_CODE = env("LANGUAGE_CODE", "tr")
+TIME_ZONE = env("TZ", "Europe/Istanbul")
 USE_I18N = True
 USE_TZ = True
 
@@ -154,17 +175,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # -------------------------------------------------
-# NOTIFICATIONS
+# NOTIFICATIONS (opsiyonel)
 # -------------------------------------------------
-# Provider secimi
 NOTIFY_WHATSAPP_PROVIDER = env("NOTIFY_WHATSAPP_PROVIDER", "meta_cloud")
 NOTIFY_SMS_PROVIDER = env("NOTIFY_SMS_PROVIDER", "generic")
 
-# WhatsApp Business (Meta Cloud API)
 WHATSAPP_TOKEN = env("WHATSAPP_TOKEN", "")
 WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", "")
 WHATSAPP_API_VERSION = env("WHATSAPP_API_VERSION", "v19.0")
 
-# SMS
 SMS_API_KEY = env("SMS_API_KEY", "")
 SMS_SENDER = env("SMS_SENDER", "")
+
+# -------------------------------------------------
+# ROLE SETTINGS
+# -------------------------------------------------
+# Admin: her şeyi görür
+ROLE_ADMIN_GROUP = env("ROLE_ADMIN_GROUP", "ADMIN")
+# Usta: sadece kendi ekranı (fiyat göremez)
+ROLE_WORKER_GROUP = env("ROLE_WORKER_GROUP", "USTA")
+# Usta ekranı / admin ekranı ayrımı
+WORKER_HOME_URL = env("WORKER_HOME_URL", "/workorders/my/")
+ADMIN_HOME_URL = env("ADMIN_HOME_URL", "/workorders/")
