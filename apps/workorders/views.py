@@ -522,3 +522,36 @@ def worker_workorder_detail(request, pk: int):
             return redirect("/workorders/my/")
 
     return render(request, "workorders/worker_detail.html", {"o": o, "repeat_info": repeat_info, "services_catalog": SERVICES_CATALOG})
+    
+import base64, io
+import qrcode
+from django.conf import settings
+from django.shortcuts import get_object_or_404, render
+from .models import WorkOrder
+
+
+def _qr_data_uri(text: str) -> str:
+    qr = qrcode.QRCode(border=1, box_size=6)
+    qr.add_data(text)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{b64}"
+
+
+def workorder_final_print(request, pk: int):
+    o = get_object_or_404(WorkOrder, pk=pk)
+
+    instagram_url = settings.INSTAGRAM_URL
+    qr_uri = _qr_data_uri(instagram_url)
+
+    return render(
+        request,
+        "workorders/final_receipt.html",
+        {
+            "o": o,
+            "qr_uri": qr_uri,
+        }
+    )

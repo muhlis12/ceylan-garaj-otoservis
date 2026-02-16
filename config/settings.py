@@ -197,3 +197,4 @@ ROLE_WORKER_GROUP = env("ROLE_WORKER_GROUP", "USTA")
 # Usta ekranı / admin ekranı ayrımı
 WORKER_HOME_URL = env("WORKER_HOME_URL", "/workorders/my/")
 ADMIN_HOME_URL = env("ADMIN_HOME_URL", "/workorders/")
+INSTAGRAM_URL = "https://www.instagram.com/ceylan_garaj/"
